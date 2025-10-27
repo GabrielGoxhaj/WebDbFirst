@@ -1,0 +1,6 @@
+@WebDbFirst_HostAddress = http://localhost:5052
+
+GET {{WebDbFirst_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
