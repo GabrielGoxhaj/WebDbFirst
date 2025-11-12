@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -20,14 +21,17 @@ namespace WebDbFirst.Controllers
             _context = context;
         }
 
+        [Authorize(Policy = "UserPolicy")]
         // GET: api/Customers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Customer>>> GetCustomers()
         {
-            return await _context.Customers
+            var custs = await _context.Customers
                 .Include(c => c.SalesOrderHeaders)
                 .Include(c => c.CustomerAddresses)
                 .ToListAsync();
+
+            return Ok(new { status = 200, message = "TUTTO BENONE", totalCustomers = custs.Count, data = custs });
         }
 
         // GET: api/Customers
@@ -53,6 +57,32 @@ namespace WebDbFirst.Controllers
             return customers;
         }
 
+        [HttpGet("GetEmployeesDtoStream")]
+        public async IAsyncEnumerable<CustomerDto> GetCustomersDtoStream()
+        {
+            var customers = _context.Customers
+                .AsNoTracking()
+                .Select(c => new CustomerDto
+                {
+                    CustomerId = c.CustomerId,
+                    NameStyle = c.NameStyle,
+                    Title = c.Title,
+                    FirstName = c.FirstName,
+                    MiddleName = c.MiddleName,
+                    LastName = c.LastName,
+                    Suffix = c.Suffix,
+                    CompanyName = c.CompanyName,
+                    SalesPerson = c.SalesPerson,
+                    CustomerAddresses = c.CustomerAddresses,
+                    SalesOrderHeaders = c.SalesOrderHeaders
+                }).AsAsyncEnumerable();
+            await foreach (var customer in customers)
+            {
+                yield return customer;
+            }
+        }
+
+
         // GET: api/Customers/5
         [HttpGet("{id}")]
         public async Task<ActionResult<Customer>> GetCustomer(int id)
@@ -67,6 +97,7 @@ namespace WebDbFirst.Controllers
             return customer;
         }
 
+        [Authorize]
         // PUT: api/Customers/5
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPut("{id}")]
@@ -98,6 +129,7 @@ namespace WebDbFirst.Controllers
             return NoContent();
         }
 
+        [Authorize]
         // POST: api/Customers
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
@@ -109,6 +141,7 @@ namespace WebDbFirst.Controllers
             return CreatedAtAction("GetCustomer", new { id = customer.CustomerId }, customer);
         }
 
+        [Authorize]
         // DELETE: api/Customers/5
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteCustomer(int id)
