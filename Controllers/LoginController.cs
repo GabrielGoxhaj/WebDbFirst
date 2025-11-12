@@ -39,7 +39,6 @@ namespace WebDbFirst.Controllers
                 return BadRequest("Credenziali non valide");
             }
         }
-
         private string GenerateJwtToken(Credentials credentials, string role)
         {
             var secretKey = _jwtSettings.SecretKey;

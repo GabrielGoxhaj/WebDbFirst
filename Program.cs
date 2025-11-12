@@ -77,7 +77,6 @@ namespace WebDbFirst
                     policy.RequireRole("User", "Admin");
                 });
             });
-
             var app = builder.Build();
 
             // Configure the HTTP request pipeline.
