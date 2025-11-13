@@ -4,6 +4,9 @@ using Microsoft.EntityFrameworkCore.SqlServer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text.Json.Serialization;
 using WebDbFirst.Models;
+using Serilog;
+using Serilog.Sinks.MSSqlServer;
+using System.Collections.ObjectModel;
 
 namespace WebDbFirst
 {
@@ -11,7 +14,38 @@ namespace WebDbFirst
     {
         public static void Main(string[] args)
         {
+
+
             var builder = WebApplication.CreateBuilder(args);
+
+            string logDbConnectionString = builder.Configuration.GetConnectionString("AdventureWorksLT2019") ?? throw new InvalidOperationException("Connection string 'LogDatabase' not found.");
+
+            ColumnOptions seriLogNewColumn = new();
+            seriLogNewColumn.AdditionalColumns = new Collection<SqlColumn>
+            {
+                new SqlColumn{ColumnName ="NuovaColonnaOrloffo"}
+            };
+
+            MSSqlServerSinkOptions mSSqlServerSink = new()
+            {
+                TableName = "Logs",
+                AutoCreateSqlTable = true
+            };
+
+            Log.Logger = new LoggerConfiguration()
+                .WriteTo.Console()
+                .WriteTo.File("D:\\Temp\\webdbfirst.log", rollingInterval: RollingInterval.Day)
+                .WriteTo.MSSqlServer(
+                    connectionString: logDbConnectionString, 
+                    sinkOptions: mSSqlServerSink,
+                    columnOptions: seriLogNewColumn)
+                .CreateLogger();
+
+            Log.Information("Bootstrap application starting");
+
+            var nlogger = NLog.LogManager.GetCurrentClassLogger();
+
+            nlogger.Info("NLOG *********************************************************************");    
 
             // Add services to the container.
 
@@ -77,6 +111,7 @@ namespace WebDbFirst
                     policy.RequireRole("User", "Admin");
                 });
             });
+
             var app = builder.Build();
 
             // Configure the HTTP request pipeline.

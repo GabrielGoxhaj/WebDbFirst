@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -26,6 +27,11 @@ namespace WebDbFirst.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Customer>>> GetCustomers()
         {
+            if (User.IsInRole("Admin"))
+            {
+                Console.WriteLine($"Eseguo il metodo GetCustomers(), sono il customer: {User.FindFirstValue("CustomerId")} ");
+            }
+
             var custs = await _context.Customers
                 .Include(c => c.SalesOrderHeaders)
                 .Include(c => c.CustomerAddresses)

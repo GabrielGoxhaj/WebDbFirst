@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
+using Serilog;
 using System.Security.Claims;
 using WebDbFirst.Models;
 
@@ -21,15 +22,38 @@ namespace WebDbFirst.Controllers
         [HttpPost]
         public IActionResult Post([FromBody] Credentials credentials)
         {
+
             if (credentials != null)
             {
-                string role = "User";
+                string role = "Admin";
+                try
+                {
+                    //int x = 1;
+                    //int y = x / 0;
+
+                    var token = GenerateJwtToken(credentials, role);
+
+                    Response.Cookies.Append("flashMessage", credentials.ToString(), new CookieOptions
+                    {
+                        Secure = true,
+                        SameSite = SameSiteMode.None,
+                        MaxAge = TimeSpan.FromMinutes(5)
+                    });
+
+                    Log.Information("Utente {Username} ha effettuato il login con successo.", credentials.Username);
+                    return Ok(new { token });
+                    // altrimenti
+                    // esco subito e mando l'errore/codice di utente sconosciuto
+                }
+                catch (Exception ex)
+                {
+                    Log.Error(ex, "Errore durante il login per l'utente {Username}.", credentials.Username);
+                    NLog.LogManager.GetCurrentClassLogger().Error(ex, " ############################### Errore durante il login per l'utente {0}.", credentials.Username);
+                    return null;
+                }
                 // Lo username e la password, esistono nel mio db degli utenti?
                 // se esiste, farò determinate azioni
-                var token = GenerateJwtToken(credentials, role);
-                return Ok(new { token });
-                // altrimenti
-                // esco subito e mando l'errore/codice di utente sconosciuto
+
             }
             else
             {
@@ -39,6 +63,7 @@ namespace WebDbFirst.Controllers
                 return BadRequest("Credenziali non valide");
             }
         }
+
         private string GenerateJwtToken(Credentials credentials, string role)
         {
             var secretKey = _jwtSettings.SecretKey;
@@ -51,6 +76,9 @@ namespace WebDbFirst.Controllers
                     [
                 new Claim(ClaimTypes.Name, credentials.Username!),
                 new Claim(ClaimTypes.Role,role),
+                new Claim("NickName", "Claoff"),
+                new Claim("Department", "IT"),
+                new Claim("CustomerId", "12345"),
                 ]
                 ),
 
