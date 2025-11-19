@@ -1,7 +1,10 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.IdentityModel.Tokens;
 using Serilog;
 using System.Security.Claims;
+using System.Text;
+using System.Text.Json;
 using WebDbFirst.Models;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
@@ -34,6 +37,16 @@ namespace WebDbFirst.Controllers
                     var token = GenerateJwtToken(credentials, role);
 
                     Response.Cookies.Append("flashMessage", credentials.ToString(), new CookieOptions
+                    {
+                        Secure = true,
+                        SameSite = SameSiteMode.None,
+                        MaxAge = TimeSpan.FromMinutes(5)
+                    });
+
+                    var json = JsonSerializer.Serialize(credentials);
+                    var b64url = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(json));
+
+                    Response.Cookies.Append("flashCredentials", b64url, new CookieOptions
                     {
                         Secure = true,
                         SameSite = SameSiteMode.None,

@@ -1,12 +1,15 @@
-﻿using System;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
+using MongoDB.Bson;
+using MongoDB.Driver;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using WebDbFirst.Models;
 
 namespace WebDbFirst.Controllers
@@ -16,10 +19,13 @@ namespace WebDbFirst.Controllers
     public class CustomersController : ControllerBase
     {
         private readonly AdventureWorksLt2019Context _context;
-
-        public CustomersController(AdventureWorksLt2019Context context)
+        private IMongoCollection<BsonDocument> _mongoCollection;
+        public CustomersController(AdventureWorksLt2019Context context,IOptions<BnbMDBConfig> bnbMDBConfig)
         {
             _context = context;
+            var mongoClient = new MongoClient(bnbMDBConfig.Value.ConnectionString);
+            var mongoDatabase = mongoClient.GetDatabase(bnbMDBConfig.Value.DatabaseName);
+            _mongoCollection = mongoDatabase.GetCollection<BsonDocument>(bnbMDBConfig.Value.BnBCollectionName);
         }
 
         [Authorize(Policy = "UserPolicy")]
@@ -101,6 +107,41 @@ namespace WebDbFirst.Controllers
             }
 
             return customer;
+        }
+
+
+        [Route("GetCustomerMDB/{id}")]
+        [HttpGet]
+        public async Task<ActionResult<CustomerMDB>> GetCustomerMDB(int id)
+        {
+            var customer = await _context.Customers.FindAsync(id);
+
+           
+            if (customer == null)
+            {
+                return NotFound();  
+            }
+
+            CustomerMDB customerMDB = new();
+
+            customerMDB.CustomerId = customer.CustomerId;
+            customerMDB.NameStyle = customer.NameStyle;
+            customerMDB.Title = customer.Title;
+            customerMDB.FirstName = customer.FirstName;
+            
+            // ... copia gli altri campi necessari ...
+            // oppure crea un costruttore in CustomerMDB che accetta un Customer come parametro
+
+            string idString = "63c6a69dd3d19531921ac195";
+            ObjectId objectId = ObjectId.Parse(idString);
+
+            var filter = Builders<BsonDocument>.Filter.Eq("_id", objectId);
+            var resultMDB = await _mongoCollection.Find(filter).FirstOrDefaultAsync();
+            
+            customerMDB.LocationHotel = resultMDB["host_location"].AsString;
+            customerMDB.Price = resultMDB["price"].AsString;
+
+            return customerMDB;
         }
 
         [Authorize]

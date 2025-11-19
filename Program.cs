@@ -7,6 +7,7 @@ using WebDbFirst.Models;
 using Serilog;
 using Serilog.Sinks.MSSqlServer;
 using System.Collections.ObjectModel;
+using WebDbFirst.Controllers;
 
 namespace WebDbFirst
 {
@@ -36,7 +37,7 @@ namespace WebDbFirst
                 .WriteTo.Console()
                 .WriteTo.File("D:\\Temp\\webdbfirst.log", rollingInterval: RollingInterval.Day)
                 .WriteTo.MSSqlServer(
-                    connectionString: logDbConnectionString, 
+                    connectionString: logDbConnectionString,
                     sinkOptions: mSSqlServerSink,
                     columnOptions: seriLogNewColumn)
                 .CreateLogger();
@@ -45,7 +46,7 @@ namespace WebDbFirst
 
             var nlogger = NLog.LogManager.GetCurrentClassLogger();
 
-            nlogger.Info("NLOG *********************************************************************");    
+            nlogger.Info("NLOG *********************************************************************");
 
             // Add services to the container.
 
@@ -94,6 +95,7 @@ namespace WebDbFirst
                         ValidateIssuerSigningKey = true,
                         ValidIssuer = jwtSettings.Issuer,
                         ValidAudience = jwtSettings.Audience,
+                        //ValidateLifetime=true,
                         ClockSkew = TimeSpan.FromSeconds(3),
                         IssuerSigningKey = new SymmetricSecurityKey(key)
                     };
@@ -111,6 +113,8 @@ namespace WebDbFirst
                     policy.RequireRole("User", "Admin");
                 });
             });
+
+            builder.Services.Configure<BnbMDBConfig>(builder.Configuration.GetSection("BnbMDBConfig"));
 
             var app = builder.Build();
 

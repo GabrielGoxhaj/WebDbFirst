@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.AspNetCore.OpenApi;
 
 namespace WebDbFirst.Models;
 
